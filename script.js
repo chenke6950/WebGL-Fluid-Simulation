@@ -57,15 +57,15 @@ const canvas = document.getElementsByTagName('canvas')[0];
 resizeCanvas();
 
 let config = {
-    SIM_RESOLUTION: 128,
+    SIM_RESOLUTION: 32,
     DYE_RESOLUTION: 1024,
     CAPTURE_RESOLUTION: 512,
-    DENSITY_DISSIPATION: 1,
-    VELOCITY_DISSIPATION: 0.2,
-    PRESSURE: 0.8,
-    PRESSURE_ITERATIONS: 20,
-    CURL: 30,
-    SPLAT_RADIUS: 0.25,
+    DENSITY_DISSIPATION: 4,
+    VELOCITY_DISSIPATION: 1.4,
+    PRESSURE: 0.19,
+    PRESSURE_ITERATIONS: 8,
+    CURL: 1,
+    SPLAT_RADIUS: 0.45,
     SPLAT_FORCE: 6000,
     SHADING: true,
     COLORFUL: true,
@@ -73,13 +73,13 @@ let config = {
     PAUSED: false,
     BACK_COLOR: { r: 0, g: 0, b: 0 },
     TRANSPARENT: false,
-    BLOOM: true,
+    BLOOM: false,
     BLOOM_ITERATIONS: 8,
     BLOOM_RESOLUTION: 256,
     BLOOM_INTENSITY: 0.8,
     BLOOM_THRESHOLD: 0.6,
     BLOOM_SOFT_KNEE: 0.7,
-    SUNRAYS: true,
+    SUNRAYS: false,
     SUNRAYS_RESOLUTION: 196,
     SUNRAYS_WEIGHT: 1.0,
 }
@@ -1167,7 +1167,9 @@ function updateKeywords () {
 
 updateKeywords();
 initFramebuffers();
-multipleSplats(parseInt(Math.random() * 20) + 5);
+//multipleSplats(parseInt(Math.random() * 20) + 5);
+splatPointerDebug();
+
 
 let lastUpdateTime = Date.now();
 let colorUpdateTimer = 0.0;
@@ -1178,7 +1180,7 @@ function update () {
     if (resizeCanvas())
         initFramebuffers();
     updateColors(dt);
-    applyInputs();
+    //applyInputs();
     if (!config.PAUSED)
         step(dt);
     render(null);
@@ -1328,6 +1330,18 @@ function drawCheckerboard (target) {
     blit(target);
 }
 
+function splatPointerDebug() {
+    const color = generateColor();
+    color.r *= 10.0;
+    color.g *= 10.0;
+    color.b *= 10.0;
+    const x = 0.5;
+    const y = 0.5;
+    const dx = 500;
+    const dy = 200;
+    splat(x, y, dx, dy, color);
+}
+
 function drawDisplay (target) {
     let width = target == null ? gl.drawingBufferWidth : target.width;
     let height = target == null ? gl.drawingBufferHeight : target.height;
@@ -1335,7 +1349,7 @@ function drawDisplay (target) {
     displayMaterial.bind();
     if (config.SHADING)
         gl.uniform2f(displayMaterial.uniforms.texelSize, 1.0 / width, 1.0 / height);
-    gl.uniform1i(displayMaterial.uniforms.uTexture, dye.read.attach(0));
+    gl.uniform1i(displayMaterial.uniforms.uTexture, velocity.read.attach(0));
     if (config.BLOOM) {
         gl.uniform1i(displayMaterial.uniforms.uBloom, bloom.attach(1));
         gl.uniform1i(displayMaterial.uniforms.uDithering, ditheringTexture.attach(2));
@@ -1423,6 +1437,7 @@ function splatPointer (pointer) {
     let dy = pointer.deltaY * config.SPLAT_FORCE;
     splat(pointer.texcoordX, pointer.texcoordY, dx, dy, pointer.color);
 }
+
 
 function multipleSplats (amount) {
     for (let i = 0; i < amount; i++) {
